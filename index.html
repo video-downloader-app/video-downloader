@@ -339,8 +339,9 @@
 </div>
 
 <script>
-    const RAPID_API_KEY = "0c8a006675msh2ad0bae5f939275p1923afjsn3ad4d7a";
-    const RAPID_API_HOST = "youtube-media-downloader.p.rapidapi.com";
+    // अपनी पूरी असली API Key यहाँ डालें (जो RapidAPI डैशबोर्ड में है)
+    const RAPID_API_KEY = "1398df092dmsh42a18277da97a01p16db05jsn4b6e4bb1..."; 
+    const RAPID_API_HOST = "youtube-video-fast-downloader-24-7.p.rapidapi.com";
     let vdCurrentVideoData = null;
 
     function vdExtractYouTubeID(url) {
@@ -374,7 +375,7 @@
 
         loadingBox.style.display = 'block';
 
-        const apiUrl = `https://${RAPID_API_HOST}/v2/video/details?videoId=` + encodeURIComponent(videoId);
+        const apiUrl = `https://${RAPID_API_HOST}/details?videoId=` + encodeURIComponent(videoId);
 
         fetch(apiUrl, {
             method: "GET",
