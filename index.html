@@ -354,7 +354,8 @@
 
         loadingBox.style.display = 'block';
 
-        const apiUrl = `https://${RAPID_API_HOST}/details?videoid=` + encodeURIComponent(videoId);
+        // बिल्कुल सही एंडपॉइंट /get-video-info और सही पैरामीटर vercel/rapidapi के अनुसार
+        const apiUrl = `https://${RAPID_API_HOST}/get-video-info?videoId=` + encodeURIComponent(videoId) + `&return_available_quality=false&response_mode=default`;
 
         fetch(apiUrl, {
             method: "GET",
@@ -375,44 +376,51 @@
             vdCurrentVideoData = data;
 
             const title = data.title || "YouTube Video";
-            const thumbnail = (data.thumbnails && data.thumbnails.length > 0) ? data.thumbnails[0].url : `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+            const thumbnail = (data.thumbnail && data.thumbnail.length > 0) ? data.thumbnail[0].url : `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
 
             thumbBox.innerHTML = `<img src="${thumbnail}" alt="Thumbnail">`;
             document.getElementById('vdVideoTitleDisplay').innerText = title;
 
-            // Populate Video Table
+            // Populate Video & Audio tables based on availableQuality structure in your screenshot
             const videoTbody = document.querySelector('#vdTabVideo tbody');
             videoTbody.innerHTML = '';
-            if (data.videos && data.videos.items && data.videos.items.length > 0) {
-                data.videos.items.forEach((item, index) => {
-                    const quality = item.quality || 'HD';
-                    const ext = item.extension || 'mp4';
-                    const size = item.sizeText ? ` (${item.sizeText})` : '';
-                    videoTbody.innerHTML += `<tr>
-                        <td><strong>${quality}</strong>${size}</td>
-                        <td>${ext.toUpperCase()}</td>
-                        <td><button class="vd-btn-download" onclick="vdTriggerDownload('video', ${index})">Download</button></td>
-                    </tr>`;
-                });
-            } else {
-                videoTbody.innerHTML = '<tr><td colspan="3">No video formats available.</td></tr>';
-            }
-
-            // Populate Audio Table
             const audioTbody = document.querySelector('#vdTabAudio tbody');
             audioTbody.innerHTML = '';
-            if (data.audios && data.audios.items && data.audios.items.length > 0) {
-                data.audios.items.forEach((item, index) => {
-                    const ext = item.extension || 'm4a';
-                    const size = item.sizeText ? ` (${item.sizeText})` : '';
-                    audioTbody.innerHTML += `<tr>
-                        <td><strong>Audio</strong>${size}</td>
-                        <td>${ext.toUpperCase()}</td>
-                        <td><button class="vd-btn-download" onclick="vdTriggerDownload('audio', ${index})">Download</button></td>
-                    </tr>`;
+
+            if (data.availableQuality && Array.isArray(data.availableQuality)) {
+                let videoCount = 0;
+                let audioCount = 0;
+
+                data.availableQuality.forEach((item, index) => {
+                    const type = item.type;
+                    const quality = item.quality || 'Standard';
+                    const mime = item.mime || '';
+                    const sizeBytes = item.size || 0;
+                    const sizeText = sizeBytes > 0 ? ` (${(sizeBytes / (1024*1024)).toFixed(1)} MB)` : '';
+                    const ext = mime.includes('webm') ? 'webm' : 'mp4';
+
+                    if (type === 'video') {
+                        videoCount++;
+                        videoTbody.innerHTML += `<tr>
+                            <td><strong>${quality}</strong>${sizeText}</td>
+                            <td>${ext.toUpperCase()}</td>
+                            <td><button class="vd-btn-download" onclick="vdTriggerDownload(${index})">Download</button></td>
+                        </tr>`;
+                    } else if (type === 'audio') {
+                        audioCount++;
+                        audioTbody.innerHTML += `<tr>
+                            <td><strong>Audio (${item.bitrate || 'Standard'})</strong>${sizeText}</td>
+                            <td>M4A</td>
+                            <td><button class="vd-btn-download" onclick="vdTriggerDownload(${index})">Download</button></td>
+                        </tr>`;
+                    }
                 });
+
+                if (videoCount === 0) videoTbody.innerHTML = '<tr><td colspan="3">No video formats available.</td></tr>';
+                if (audioCount === 0) audioTbody.innerHTML = '<tr><td colspan="3">No audio formats available.</td></tr>';
             } else {
-                audioTbody.innerHTML = '<tr><td colspan="3">No audio formats available.</td></tr>';
+                videoTbody.innerHTML = '<tr><td colspan="3">No formats found.</td></tr>';
+                audioTbody.innerHTML = '<tr><td colspan="3">No formats found.</td></tr>';
             }
 
             resultSection.style.display = 'block';
@@ -438,24 +446,20 @@
         }
     }
 
-    function vdTriggerDownload(type, index) {
-        if (!vdCurrentVideoData) {
+    function vdTriggerDownload(index) {
+        if (!vdCurrentVideoData || !vdCurrentVideoData.availableQuality) {
             alert("Please search or process a YouTube link first.");
             return;
         }
 
-        let downloadUrl = null;
-        if (type === 'video' && vdCurrentVideoData.videos && vdCurrentVideoData.videos.items[index]) {
-            downloadUrl = vdCurrentVideoData.videos.items[index].url;
-        } else if (type === 'audio' && vdCurrentVideoData.audios && vdCurrentVideoData.audios.items[index]) {
-            downloadUrl = vdCurrentVideoData.audios.items[index].url;
-        }
-
-        if (downloadUrl) {
+        const item = vdCurrentVideoData.availableQuality[index];
+        // यदि इस एपीआई ऑब्जेक्ट में डायरेक्ट डाउनलोड लिंक उपलब्ध है या फिर हम सीधे यूजर को सूचित करते हैं
+        if (item && item.url) {
             alert("Preparing your download...");
-            window.location.href = downloadUrl;
+            window.location.href = item.url;
         } else {
-            alert("Download link is currently unavailable.");
+            // अगर आइटम के अंदर यूआरएल डायरेक्ट नहीं है, तो यूजर को वीडियो प्लेग्राउंड पेज का लिंक या अल्टरनेटिव दे सकते हैं
+            alert("Direct download URL is processing by API. Please use the download option or check format.");
         }
     }
 </script>
