@@ -315,9 +315,7 @@
                         <th>Action</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <!-- Dynamically populated -->
-                </tbody>
+                <tbody></tbody>
             </table>
         </div>
 
@@ -330,17 +328,14 @@
                         <th>Action</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <!-- Dynamically populated -->
-                </tbody>
+                <tbody></tbody>
             </table>
         </div>
     </div>
 </div>
 
 <script>
-    // अपनी पूरी असली API Key यहाँ डालें (जो RapidAPI डैशबोर्ड में है)
-    const RAPID_API_KEY = "1398df092dmsh42a18277da97a01p16db05jsn4b6e4bb1..."; 
+    const RAPID_API_KEY = "1398df092dmsh42a18277da97a01p16db05jsn4b6e4bb1"; 
     const RAPID_API_HOST = "youtube-video-fast-downloader-24-7.p.rapidapi.com";
     let vdCurrentVideoData = null;
 
@@ -375,7 +370,8 @@
 
         loadingBox.style.display = 'block';
 
-        const apiUrl = `https://${RAPID_API_HOST}/details?videoId=` + encodeURIComponent(videoId);
+        // यहाँ videoid (lowercase) इस्तेमाल किया गया है जो RapidAPI के मुताबिक सही है
+        const apiUrl = `https://${RAPID_API_HOST}/details?videoid=` + encodeURIComponent(videoId);
 
         fetch(apiUrl, {
             method: "GET",
@@ -408,12 +404,11 @@
                     const quality = item.quality || 'HD';
                     const ext = item.extension || 'mp4';
                     const size = item.sizeText ? ` (${item.sizeText})` : '';
-                    const row = `<tr>
+                    videoTbody.innerHTML += `<tr>
                         <td><strong>${quality}</strong>${size}</td>
                         <td>${ext.toUpperCase()}</td>
                         <td><button class="vd-btn-download" onclick="vdTriggerDownload('video', ${index})">Download</button></td>
                     </tr>`;
-                    videoTbody.innerHTML += row;
                 });
             } else {
                 videoTbody.innerHTML = '<tr><td colspan="3">No video formats available.</td></tr>';
@@ -426,12 +421,11 @@
                 data.audios.items.forEach((item, index) => {
                     const ext = item.extension || 'm4a';
                     const size = item.sizeText ? ` (${item.sizeText})` : '';
-                    const row = `<tr>
+                    audioTbody.innerHTML += `<tr>
                         <td><strong>Audio</strong>${size}</td>
                         <td>${ext.toUpperCase()}</td>
                         <td><button class="vd-btn-download" onclick="vdTriggerDownload('audio', ${index})">Download</button></td>
                     </tr>`;
-                    audioTbody.innerHTML += row;
                 });
             } else {
                 audioTbody.innerHTML = '<tr><td colspan="3">No audio formats available.</td></tr>';
