@@ -4,8 +4,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PinkMate - Video Link Viewer</title>
-<meta name="description" content="Paste a YouTube video or Shorts link to view its thumbnail and open the original video.">
+<title>PinkMate - Video Downloader</title>
+<meta name="description" content="Preview YouTube video links and select available authorized video or audio downloads.">
 
 <style>
 * {
@@ -30,8 +30,8 @@ header {
 }
 
 .container {
-    max-width: 650px;
-    margin: 65px auto;
+    max-width: 700px;
+    margin: 50px auto;
     padding: 25px;
     text-align: center;
 }
@@ -43,7 +43,7 @@ h1 {
 
 p {
     color: #666;
-    margin-bottom: 25px;
+    margin-bottom: 20px;
     line-height: 1.6;
 }
 
@@ -66,7 +66,7 @@ button {
     background: #ec4899;
     color: white;
     border: none;
-    padding: 15px 22px;
+    padding: 14px 22px;
     border-radius: 10px;
     cursor: pointer;
     font-size: 15px;
@@ -81,7 +81,7 @@ button:hover {
     display: none;
     background: white;
     margin-top: 30px;
-    padding: 20px;
+    padding: 22px;
     border-radius: 15px;
     box-shadow: 0 5px 20px #fbcfe8;
 }
@@ -99,7 +99,61 @@ button:hover {
     text-decoration: none;
     padding: 13px 25px;
     border-radius: 9px;
-    margin-top: 12px;
+    margin: 10px 0 20px;
+}
+
+.tabs {
+    display: flex;
+    gap: 10px;
+    margin: 20px 0;
+}
+
+.tabs button {
+    flex: 1;
+}
+
+.tabs button.active {
+    background: #be185d;
+}
+
+.quality-section {
+    display: none;
+    text-align: left;
+    margin-top: 15px;
+}
+
+.quality-section.active {
+    display: block;
+}
+
+.quality-section h3 {
+    color: #db2777;
+    margin: 15px 0;
+}
+
+.quality-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 13px;
+    margin-bottom: 10px;
+    border: 1px solid #fbcfe8;
+    border-radius: 10px;
+}
+
+.quality-row button {
+    padding: 9px 15px;
+    font-size: 13px;
+}
+
+.note {
+    background: #fff0f6;
+    color: #9d174d;
+    padding: 12px;
+    border-radius: 9px;
+    font-size: 13px;
+    margin-top: 15px;
 }
 
 #error {
@@ -119,7 +173,11 @@ footer {
     }
 
     .container {
-        margin: 35px auto;
+        margin: 30px auto;
+    }
+
+    .quality-row {
+        font-size: 14px;
     }
 }
 </style>
@@ -131,53 +189,68 @@ footer {
 
 <div class="container">
 
-    <h1>YouTube Video Viewer</h1>
+<h1>YouTube Video Downloader</h1>
 
-    <p>
-        Paste a YouTube video or Shorts URL below.
-        View its thumbnail and open the original video.
-    </p>
+<p>
+Paste a YouTube video or Shorts URL to preview its thumbnail
+and check available authorized downloads.
+</p>
 
-    <div class="input-box">
-        <input
-            type="text"
-            id="videoURL"
-            placeholder="Paste YouTube video URL here..."
-        >
-        <button onclick="showVideo()">Search</button>
+<div class="input-box">
+    <input type="text" id="videoURL"
+    placeholder="Paste YouTube video URL here...">
+    <button onclick="showVideo()">Search</button>
+</div>
+
+<div id="error"></div>
+
+<div id="result">
+
+    <h2 id="videoTitle">YouTube Video</h2>
+
+    <img id="thumbnail" src="" alt="Video thumbnail">
+
+    <a id="watchButton" class="watch"
+    href="#" target="_blank" rel="noopener noreferrer">
+        Watch on YouTube
+    </a>
+
+    <div class="tabs">
+        <button id="videoTab" class="active"
+        onclick="showTab('video')">Video</button>
+
+        <button id="audioTab"
+        onclick="showTab('audio')">Audio</button>
     </div>
 
-    <div id="error"></div>
+    <div id="videoSection" class="quality-section active">
+        <h3>Video Quality</h3>
+        <div id="videoOptions"></div>
+    </div>
 
-    <div id="result">
-        <h2 id="videoTitle">Your Video</h2>
+    <div id="audioSection" class="quality-section">
+        <h3>Audio Quality</h3>
+        <div id="audioOptions"></div>
+    </div>
 
-        <img id="thumbnail" src="" alt="YouTube video thumbnail">
-
-        <p>Your video is ready to watch.</p>
-
-        <a
-            id="watchButton"
-            class="watch"
-            href="#"
-            target="_blank"
-            rel="noopener noreferrer"
-        >
-            Watch on YouTube
-        </a>
+    <div class="note">
+        Downloads are available only for authorized files
+        supplied by the website owner. YouTube links alone
+        do not provide downloadable media files.
     </div>
 
 </div>
+</div>
 
 <footer>
-    PinkMate | YouTube Link Viewer
+PinkMate | Video Link Viewer
 </footer>
 
 <script>
+
 function getVideoID(url) {
     try {
         const parsed = new URL(url.trim());
-
         let id = "";
 
         if (parsed.hostname === "youtu.be" ||
@@ -186,9 +259,8 @@ function getVideoID(url) {
         }
 
         else if (
-            parsed.hostname === "youtube.com" ||
-            parsed.hostname === "www.youtube.com" ||
-            parsed.hostname === "m.youtube.com"
+            ["youtube.com", "www.youtube.com",
+             "m.youtube.com"].includes(parsed.hostname)
         ) {
             if (parsed.pathname === "/watch") {
                 id = parsed.searchParams.get("v");
@@ -201,12 +273,55 @@ function getVideoID(url) {
         }
 
         return /^[a-zA-Z0-9_-]{11}$/.test(id || "")
-            ? id
-            : null;
+            ? id : null;
 
     } catch {
         return null;
     }
+}
+
+const videoQualities = [
+    "144p", "240p", "360p", "480p",
+    "720p HD", "1080p Full HD",
+    "1440p 2K", "2160p 4K"
+];
+
+const audioQualities = [
+    "MP3 64 kbps",
+    "MP3 128 kbps",
+    "MP3 192 kbps",
+    "MP3 256 kbps",
+    "MP3 320 kbps"
+];
+
+function createOptions(list, type) {
+    const container = document.getElementById(
+        type === "video" ? "videoOptions" : "audioOptions"
+    );
+
+    container.innerHTML = "";
+
+    list.forEach(quality => {
+        const row = document.createElement("div");
+        row.className = "quality-row";
+
+        const label = document.createElement("span");
+        label.textContent = quality;
+
+        const button = document.createElement("button");
+        button.textContent = "Download";
+
+        button.addEventListener("click", () => {
+            alert(
+                "No authorized " + type +
+                " file is available in this quality yet."
+            );
+        });
+
+        row.appendChild(label);
+        row.appendChild(button);
+        container.appendChild(row);
+    });
 }
 
 function showVideo() {
@@ -220,22 +335,44 @@ function showVideo() {
     const videoID = getVideoID(url);
 
     if (!videoID) {
-        error.textContent = "Please enter a valid YouTube video URL.";
+        error.textContent = "Please enter a valid YouTube URL.";
         return;
     }
 
-    const videoURL = "https://www.youtube.com/watch?v=" + videoID;
-
     document.getElementById("thumbnail").src =
-        "https://img.youtube.com/vi/" + videoID + "/hqdefault.jpg";
+        "https://img.youtube.com/vi/" +
+        videoID + "/hqdefault.jpg";
+
+    document.getElementById("watchButton").href =
+        "https://www.youtube.com/watch?v=" + videoID;
 
     document.getElementById("videoTitle").textContent =
         "YouTube Video";
 
-    document.getElementById("watchButton").href = videoURL;
+    createOptions(videoQualities, "video");
+    createOptions(audioQualities, "audio");
+
+    showTab("video");
 
     result.style.display = "block";
 }
+
+function showTab(type) {
+    const video = type === "video";
+
+    document.getElementById("videoSection")
+        .classList.toggle("active", video);
+
+    document.getElementById("audioSection")
+        .classList.toggle("active", !video);
+
+    document.getElementById("videoTab")
+        .classList.toggle("active", video);
+
+    document.getElementById("audioTab")
+        .classList.toggle("active", !video);
+}
+
 </script>
 
 </body>
