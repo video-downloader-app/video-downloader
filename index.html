@@ -120,9 +120,13 @@
         .vd-error-msg {
             color: var(--error-red);
             background: #fef2f2;
-            padding: 10px;
+            padding: 12px;
             border-radius: 6px;
             border: 1px solid #fecaca;
+            word-break: break-all;
+            text-align: left;
+            font-family: monospace;
+            font-size: 13px;
         }
 
         .vd-result-section {
@@ -243,26 +247,6 @@
         .vd-btn-download:hover {
             background-color: var(--success-green-hover);
         }
-
-        @media (max-width: 600px) {
-            .vd-search-container {
-                flex-direction: column;
-                border: none;
-            }
-            .vd-search-container input {
-                border: 2px solid var(--primary-pink);
-                border-radius: 8px;
-                margin-bottom: 10px;
-            }
-            .vd-search-container button {
-                padding: 14px;
-                border-radius: 8px;
-            }
-            .vd-video-meta {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-        }
     </style>
 </head>
 <body>
@@ -370,7 +354,6 @@
 
         loadingBox.style.display = 'block';
 
-        // यहाँ videoid (lowercase) इस्तेमाल किया गया है जो RapidAPI के मुताबिक सही है
         const apiUrl = `https://${RAPID_API_HOST}/details?videoid=` + encodeURIComponent(videoId);
 
         fetch(apiUrl, {
@@ -380,9 +363,10 @@
                 "X-RapidAPI-Host": RAPID_API_HOST
             }
         })
-        .then(response => {
+        .then(async response => {
             if (!response.ok) {
-                throw new Error("Failed to fetch from API. Please check your API Key or subscription.");
+                const errText = await response.text();
+                throw new Error(`API Error (${response.status}): ${errText || response.statusText}`);
             }
             return response.json();
         })
